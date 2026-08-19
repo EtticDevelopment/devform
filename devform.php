@@ -34,6 +34,8 @@ add_action( 'plugins_loaded', __NAMESPACE__ . '\\bootstrap' );
 
 /**
  * Boot the plugin once WordPress has loaded.
+ *
+ * @return void
  */
 function bootstrap(): void {
 	/**

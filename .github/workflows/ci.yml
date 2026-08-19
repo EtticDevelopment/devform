@@ -51,18 +51,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      # Check what actually ships, not the repo. .distignore is the manifest for
+      # both this and the release zip, so the two can never drift.
+      - name: Build the distributable
+        run: |
+          mkdir -p dist/devform
+          rsync -a --delete --exclude-from=.distignore \
+            --exclude 'dist' --exclude '.git' \
+            ./ dist/devform/
+          echo "Shipped files:"
+          find dist/devform -type f | sort
+
       # Categories are the five slugs in Check_Categories.php. Newline separated:
       # the action converts newlines to commas itself, commas here would break it.
       - name: Run Plugin Check
         uses: wordpress/plugin-check-action@v1.1.9
         with:
           slug: devform
+          build-dir: ./dist/devform
           categories: |
             plugin_repo
             security
             performance
             accessibility
-          exclude-directories: 'dist,vendor,node_modules,tests,_dev'
           ignore-warnings: true
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -85,11 +96,11 @@ jobs:
         uses: actions/cache@v5
         with:
           path: vendor
-          key: composer-${{ hashFiles('composer.json') }}
+          key: composer-${{ hashFiles('composer.lock') }}
           restore-keys: composer-
 
       - name: Install Composer dev dependencies
-        run: composer update --no-progress --no-interaction --prefer-dist
+        run: composer install --no-progress --no-interaction --prefer-dist
 
       - name: Run PHPCS
         run: vendor/bin/phpcs -q --report=full --report-checkstyle=phpcs-report.xml
@@ -114,14 +125,14 @@ jobs:
         uses: actions/cache@v5
         with:
           path: vendor
-          key: composer-${{ hashFiles('composer.json') }}
+          key: composer-${{ hashFiles('composer.lock') }}
           restore-keys: composer-
 
       - name: Install Composer dev dependencies
-        run: composer update --no-progress --no-interaction --prefer-dist
+        run: composer install --no-progress --no-interaction --prefer-dist
 
       - name: Run PHPStan
-        run: vendor/bin/phpstan analyse --no-progress --error-format=github
+        run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G --error-format=github
 
   phpunit:
     name: PHPUnit (PHP ${{ matrix.php }})
@@ -144,7 +155,7 @@ jobs:
           extensions: pdo, pdo_sqlite, sqlite3
 
       - name: Install Composer dev dependencies
-        run: composer update --no-progress --no-interaction --prefer-dist
+        run: composer install --no-progress --no-interaction --prefer-dist
 
       - name: Run PHPUnit
         run: vendor/bin/phpunit --no-coverage

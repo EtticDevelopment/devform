@@ -9,5 +9,6 @@ parameters:
 	bootstrapFiles:
 		- .phpstan-bootstrap.php
 	excludePaths:
-		- vendor
-		- node_modules
+		analyseAndScan:
+			- vendor (?)
+			- node_modules (?)

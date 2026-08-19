@@ -19,17 +19,47 @@
 	<rule ref="WordPress-Extra"/>
 	<rule ref="WordPress.WP.I18n">
 		<properties>
-			<property name="text_domain" type="array" value="devform"/>
+			<property name="text_domain" type="array">
+				<element value="devform"/>
+			</property>
 		</properties>
 	</rule>
 
 	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
 		<properties>
-			<property name="prefixes" type="array" value="devform,DevForm,DEVFORM"/>
+			<property name="prefixes" type="array">
+				<element value="devform"/>
+				<element value="DevForm"/>
+				<element value="DEVFORM"/>
+			</property>
 		</properties>
 	</rule>
 
 	<config name="minimum_wp_version" value="6.9"/>
 	<config name="testVersion" value="8.1-"/>
 	<rule ref="PHPCompatibilityWP"/>
+
+	<!-- Tests are not shipped and are PSR-4. They shim core functions by name,
+	     which cannot be prefixed, and their class files cannot be hyphenated. -->
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<exclude-pattern>/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.Files.FileName">
+		<exclude-pattern>/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="Generic.CodeAnalysis.UnusedFunctionParameter">
+		<exclude-pattern>/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="Squiz.Commenting.FunctionComment">
+		<exclude-pattern>/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="Squiz.Commenting.ClassComment">
+		<exclude-pattern>/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.WP.GlobalVariablesOverride">
+		<exclude-pattern>/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents">
+		<exclude-pattern>/tests/*</exclude-pattern>
+	</rule>
 </ruleset>
