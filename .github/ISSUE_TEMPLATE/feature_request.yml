@@ -1,0 +1,26 @@
+name: Feature request
+description: Suggest something DevForm should do
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do that DevForm makes hard or impossible?
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: What you do today
+      description: The hook, the filter, the other plugin, or the manual step you use instead.
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      description: DevForm deliberately does not build these. Confirm your request is not one of them.
+      options:
+        - label: This is not payments, multi-step, calculations, e-signature, multisite or WPML.
+          required: true

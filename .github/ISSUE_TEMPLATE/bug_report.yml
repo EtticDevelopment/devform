@@ -1,0 +1,50 @@
+name: Bug report
+description: Something in DevForm does not work
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you expected, and what happened instead.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Which mode
+      options:
+        - Form mode (DevForm renders the form)
+        - Mailbox mode (my own code POSTs to the endpoint)
+        - Both, or not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: definition
+    attributes:
+      label: Form definition
+      description: The form file, with any secrets removed.
+      render: php
+
+  - type: textarea
+    id: actions
+    attributes:
+      label: Action stack
+      description: Which actions run on this form, in order, and which one misbehaves.
+
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      placeholder: DevForm 0.1.0, WordPress 6.9, PHP 8.2
+    validations:
+      required: true
+
+  - type: input
+    id: host
+    attributes:
+      label: Host and cache
+      description: Hosting provider, and any page cache or CDN in front of the site.
+      placeholder: Pressable, Cloudflare proxied

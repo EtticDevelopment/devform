@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<ruleset name="DevForm">
+	<description>Coding standards for DevForm.</description>
+
+	<file>.</file>
+
+	<exclude-pattern>/vendor/*</exclude-pattern>
+	<exclude-pattern>/node_modules/*</exclude-pattern>
+	<exclude-pattern>/dist/*</exclude-pattern>
+	<exclude-pattern>/_dev/*</exclude-pattern>
+
+	<arg name="extensions" value="php"/>
+	<arg name="basepath" value="."/>
+	<arg name="parallel" value="8"/>
+	<arg value="ps"/>
+
+	<!-- WPCS 3.4.1 or newer. Earlier versions carry CVE-2026-45293, an RCE in the
+	     EnqueuedResourceParameters sniff that fires when linting untrusted PHP in CI. -->
+	<rule ref="WordPress-Extra"/>
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array" value="devform"/>
+		</properties>
+	</rule>
+
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array" value="devform,DevForm,DEVFORM"/>
+		</properties>
+	</rule>
+
+	<config name="minimum_wp_version" value="6.9"/>
+	<config name="testVersion" value="8.1-"/>
+	<rule ref="PHPCompatibilityWP"/>
+</ruleset>

@@ -1,0 +1,183 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  php-lint:
+    name: PHP Lint (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.1', '8.2', '8.3', '8.4', '8.5']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: Lint all PHP files
+        run: |
+          find . -type f -name '*.php' \
+            -not -path './dist/*' \
+            -not -path './.git/*' \
+            -not -path './vendor/*' \
+            -not -path './node_modules/*' \
+            -print0 | xargs -0 -n1 -P4 php -l
+
+  plugin-check:
+    name: WordPress Plugin Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      # Categories are the five slugs in Check_Categories.php. Newline separated:
+      # the action converts newlines to commas itself, commas here would break it.
+      - name: Run Plugin Check
+        uses: wordpress/plugin-check-action@v1.1.9
+        with:
+          slug: devform
+          categories: |
+            plugin_repo
+            security
+            performance
+            accessibility
+          exclude-directories: 'dist,vendor,node_modules,tests,_dev'
+          ignore-warnings: true
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+  phpcs:
+    name: PHPCS (WordPress Coding Standards)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup PHP 8.1
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          coverage: none
+          tools: composer
+
+      - name: Cache Composer packages
+        uses: actions/cache@v5
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.json') }}
+          restore-keys: composer-
+
+      - name: Install Composer dev dependencies
+        run: composer update --no-progress --no-interaction --prefer-dist
+
+      - name: Run PHPCS
+        run: vendor/bin/phpcs -q --report=full --report-checkstyle=phpcs-report.xml
+        continue-on-error: false
+
+  phpstan:
+    name: PHPStan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup PHP 8.1
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          coverage: none
+          tools: composer
+
+      - name: Cache Composer packages
+        uses: actions/cache@v5
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.json') }}
+          restore-keys: composer-
+
+      - name: Install Composer dev dependencies
+        run: composer update --no-progress --no-interaction --prefer-dist
+
+      - name: Run PHPStan
+        run: vendor/bin/phpstan analyse --no-progress --error-format=github
+
+  phpunit:
+    name: PHPUnit (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.1', '8.2', '8.3', '8.4']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: composer
+          extensions: pdo, pdo_sqlite, sqlite3
+
+      - name: Install Composer dev dependencies
+        run: composer update --no-progress --no-interaction --prefer-dist
+
+      - name: Run PHPUnit
+        run: vendor/bin/phpunit --no-coverage
+
+  version-consistency:
+    name: Version consistency
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Compare version strings
+        run: |
+          set -euo pipefail
+
+          plugin_file=devform.php
+          header_version=$(grep -E '^\s*\*\s*Version:' "$plugin_file" | head -1 | sed -E 's/.*Version:\s*//' | tr -d '[:space:]')
+          constant_version=$(grep -E "^const VERSION" "$plugin_file" | sed -E "s/.*'([^']+)'.*/\1/")
+          readme_version=$(grep -E '^Stable tag:' readme.txt | sed -E 's/Stable tag:\s*//' | tr -d '[:space:]')
+
+          echo "$plugin_file header:    $header_version"
+          echo "DevForm\\VERSION:       $constant_version"
+          echo "readme.txt Stable tag: $readme_version"
+
+          if [[ -z "$header_version" || -z "$constant_version" || -z "$readme_version" ]]; then
+            echo "::error::Could not extract one or more version strings."
+            exit 1
+          fi
+
+          if [[ "$header_version" != "$constant_version" || "$header_version" != "$readme_version" ]]; then
+            echo "::error::Version mismatch. header=$header_version, constant=$constant_version, readme=$readme_version"
+            exit 1
+          fi
+
+          echo "OK: all versions match ($header_version)"

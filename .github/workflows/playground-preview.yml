@@ -1,0 +1,27 @@
+name: Playground preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    name: Add Playground preview button
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Single-workflow path: no npm build step, so the repo can be zipped as-is.
+      # Requires a public repo, Playground downloads the plugin in the visitor's browser.
+      - name: Add preview link to PR
+        uses: WordPress/action-wp-playground-pr-preview@v3
+        with:
+          plugin-path: '.'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
