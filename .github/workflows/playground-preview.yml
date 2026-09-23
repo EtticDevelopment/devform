@@ -21,7 +21,7 @@ jobs:
       # Single-workflow path: no npm build step, so the repo can be zipped as-is.
       # Requires a public repo, Playground downloads the plugin in the visitor's browser.
       - name: Add preview link to PR
-        uses: WordPress/action-wp-playground-pr-preview@v3
+        uses: WordPress/action-wp-playground-pr-preview@v4
         with:
           plugin-path: '.'
           github-token: ${{ secrets.GITHUB_TOKEN }}
